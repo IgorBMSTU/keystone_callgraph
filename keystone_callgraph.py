@@ -22,9 +22,10 @@ def load():
             avg_time_3 = wergzeug_111rps[file_path][0]
             avg_calls_3 = wergzeug_111rps[file_path][2]
             if avg_time_1 < avg_time_2 and avg_time_2 <  avg_time_3:
+                sub_1 = avg_time_3 - avg_time_2
+                sub_2 = avg_time_2 - avg_time_1
                 if avg_time_2 - avg_time_1 < avg_time_3 - avg_time_2:
-                    sub_1 = avg_time_3 - avg_time_2
-                    sub_2 = avg_time_2 - avg_time_1
+
                     degr_path_list.append([avg_calls_3 * avg_time_3, sub_1, sub_2, file_path])
 
         except:
