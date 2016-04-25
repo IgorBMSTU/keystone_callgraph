@@ -28,32 +28,33 @@ def load_werkzeug_data(min_div = 1, min_sub=0, min_time=0):
     
     for file_path in low_rps_data:
         if file_path in medium_rps_data and file_path in high_rps_data:
-            avg_time_low = low_rps_data[file_path]["avg_percall"]
-            avg_time_medium = medium_rps_data[file_path]["avg_percall"]
-            avg_time_high = high_rps_data[file_path]["avg_percall"]
-            avg_calls_high = high_rps_data[file_path]["number_of_calls"]
-            if avg_time_low < avg_time_medium and avg_time_medium <  avg_time_high:
-                sub_right = avg_time_high - avg_time_medium
-                sub_left = avg_time_medium - avg_time_low
+            time_low = low_rps_data[file_path]["avg_percall"]
+            time_medium = medium_rps_data[file_path]["avg_percall"]
+            time_high = high_rps_data[file_path]["avg_percall"]
+            calls_high = high_rps_data[file_path]["number_of_calls"]
+            sub_right = time_high - time_medium
+            sub_left = time_medium - time_low
+            sub = sub_right - sub_left
+            time = time_high * calls_high
+            if time_low < time_medium and time_medium <  time_high:
                 div = sub_right / sub_left
-                sub = sub_right - sub_left
-                time = avg_time_high * avg_calls_high
                 if sub_right > sub_left and div >= min_div and sub >= min_sub and time >= min_time:
                         degr_path_list.append(file_path)
     return degr_path_list
     
 def find_classname(func_data):
     path, strnumb, name = func_data
+    func_name = path.replace(".py", "").split("/")[-1]
     if exists(path):
         with open(path, "r") as f:
             source = f.read()
             tree = ast.parse(source)
-            for obj in tree.body:
-                if isinstance(obj, ast.ClassDef):
-                    for line in obj.body:
+            for ast_obj in tree.body:
+                if isinstance(ast_obj, ast.ClassDef):
+                    for line in ast_obj.body:
                         if line.lineno == strnumb:
-                            return "%s.%s.%s" % (path.replace(".py", "").split("/")[-1], obj.name, name)
-    return "%s.%s" % (path.replace(".py", "").split("/")[-1], name)
+                            return "%s.%s.%s" % (func_name, ast_obj.name, name)
+    return "%s.%s" % (func_name, name)
 
 def get_degr_list(files):
     nodes_for_save = []
@@ -69,10 +70,7 @@ def set_color(node_name, color):
     node_obj.attr['fillcolor']=color
 
 def get_predecessors(fnode):
-    all_edges = set()
-    for edges_tuple in original_graph.in_edges(fnode):
-        all_edges.add(edges_tuple[0])
-    return list(all_edges)
+    return [x[0] for x in original_graph.in_edges(fnode)]
 
 def shortest_paths(prev_flist):
     next_flist = []
@@ -91,7 +89,7 @@ def del_unmarked_nodes(restr_list):
             for save_node in path:
                 marked.append(save_node)
                 set_color(save_node, OTHER_NODES_COLOR)
-            req_func = path[0]
+            req_func = path[0]  # name of the degrading function
             marked.append(req_func)
             set_color(req_func, DEGR_NODES_COLOR)
     for node in original_graph.nodes():
@@ -104,8 +102,9 @@ def save_to_dot(original_graph):
 
 if __name__ == "__main__":
     original_graph = pgv.AGraph(ORIGINAL_GRAPH_PATH)
-    files = load_werkzeug_data(min_div = 8, min_sub = 0, min_time = 3)
+    files = load_werkzeug_data(min_div = 6, min_sub = 0, min_time = 0)
     restr_list = get_degr_list(files)
+    print len(restr_list)
     del_unmarked_nodes(restr_list)
     save_to_dot(original_graph)
     original_graph.layout()
